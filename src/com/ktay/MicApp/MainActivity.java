@@ -7,6 +7,9 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class MainActivity extends Activity {
+
+    private StreamAudioTask mStreamAudioTask;
+
     /**
      * Called when the activity is first created.
      */
@@ -20,10 +23,14 @@ public class MainActivity extends Activity {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     // The toggle is enabled
-                    Toast.makeText(getApplicationContext(), "enabled", Toast.LENGTH_SHORT).show();
+                    mStreamAudioTask = new StreamAudioTask(getApplicationContext());
+                    mStreamAudioTask.execute();
                 } else {
                     // The toggle is disabled
-                    Toast.makeText(getApplicationContext(), "disabled", Toast.LENGTH_SHORT).show();
+                    if (mStreamAudioTask != null) {
+                        mStreamAudioTask.cancel(true);
+                    }
+
                 }
             }
         });
