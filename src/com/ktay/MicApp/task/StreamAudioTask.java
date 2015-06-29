@@ -1,4 +1,4 @@
-package com.ktay.MicApp;
+package com.ktay.MicApp.task;
 
 import android.content.Context;
 import android.media.AudioFormat;
@@ -10,9 +10,12 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
+/**
+ * Task that streams audio from mic to speaker.
+ */
 public class StreamAudioTask extends AsyncTask<Integer, Void, Void> {
 
-	private static final String TAG = "Mic-App";
+	private static final String TAG = "StreamAudioTask";
 
 	private static final int RECORDING_RATE = 8000;
 	private static final int CHANNEL_IN = AudioFormat.CHANNEL_IN_MONO;
@@ -63,12 +66,14 @@ public class StreamAudioTask extends AsyncTask<Integer, Void, Void> {
 	@Override
 	protected void onCancelled(Void aVoid) {
 		Toast.makeText(mContext, "disabled", Toast.LENGTH_SHORT).show();
+		Log.d(TAG, "Audio streaming cancelled ...");
 		audioRecorder.release();
 		audioTrack.release();
 	}
 
 	@Override
 	protected void onPreExecute() {
+		Log.d(TAG, "Audio streaming started ...");
 		Toast.makeText(mContext, "enabled", Toast.LENGTH_SHORT).show();
 	}
 }
