@@ -1,12 +1,19 @@
 package com.ktay.MicApp.activity;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.CompoundButton;
+import android.widget.Toast;
 import android.widget.ToggleButton;
+import com.ktay.MicApp.MicAppConstants;
 import com.ktay.MicApp.R;
+import com.ktay.MicApp.receiver.ExternalSpeakerConnectionReceiver;
 import com.ktay.MicApp.task.StreamAudioTask;
 
 /**
@@ -15,27 +22,55 @@ import com.ktay.MicApp.task.StreamAudioTask;
 public class ToggleMicActivity extends Activity {
 
 	private static final String TAG = "ToggleMicActivity";
-	private static final String TOGGLE_MIC_INTENT_STATUS_KEY = "status";
-	private static final int SPEAKER_PLUGGED = 1;
 
 	private StreamAudioTask mStreamAudioTask;
+
+	private BroadcastReceiver mBroadcastReceiver;
+
+	private ToggleButton mToggleButton;
+
+	private BroadcastReceiver mExternalSpeakerConnectionReceiver;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		Intent intent = getIntent();
-		if ((Integer) intent.getExtras().get(TOGGLE_MIC_INTENT_STATUS_KEY) == SPEAKER_PLUGGED) {
-			setContentView(R.layout.toggle_mic);
-			setupToggleButton();
-		} else {
-			Log.d(TAG, "Speaker unplugged, nothing happening!!!");
-		}
+		mBroadcastReceiver = createBroadcastReceiver();
+
+		setContentView(R.layout.toggle_mic);
+
+		mToggleButton = createToggleButton();
+		mToggleButton.setEnabled(false);
 	}
 
-	private void setupToggleButton() {
-		ToggleButton toggle = (ToggleButton) findViewById(R.id.toggleButton);
-		toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+	@Override
+	public void onResume() {
+		super.onResume();
+
+		Log.d(TAG, "Registering broadcast receiver ...");
+		LocalBroadcastManager.getInstance(this).registerReceiver(mBroadcastReceiver, new IntentFilter(MicAppConstants
+				.TOGGLE_MIC_INTENT));
+
+		mExternalSpeakerConnectionReceiver = new ExternalSpeakerConnectionReceiver();
+		getApplicationContext().registerReceiver(mExternalSpeakerConnectionReceiver, new IntentFilter(Intent
+				.ACTION_HEADSET_PLUG));
+	}
+
+	@Override
+	public void onPause() {
+		if (mBroadcastReceiver != null) {
+			LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver);
+		}
+		if (mExternalSpeakerConnectionReceiver != null) {
+			getApplicationContext().unregisterReceiver(mExternalSpeakerConnectionReceiver);
+		}
+
+		super.onPause();
+	}
+
+	private ToggleButton createToggleButton() {
+		ToggleButton toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
+		toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 				if (isChecked) {
@@ -54,5 +89,31 @@ public class ToggleMicActivity extends Activity {
 				}
 			}
 		});
+
+		return toggleButton;
+	}
+
+	private BroadcastReceiver createBroadcastReceiver() {
+		Log.d(TAG, "Creating broadcast receiver ...");
+		return new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				Log.d(TAG, "Received broadcast with data: " + intent.getIntExtra(MicAppConstants
+						.TOGGLE_MIC_INTENT_STATUS_KEY, -1));
+
+				if ((Integer) intent.getExtras().get(MicAppConstants.TOGGLE_MIC_INTENT_STATUS_KEY) ==
+						MicAppConstants.SPEAKER_PLUGGED_CODE) {
+					mToggleButton.setEnabled(true);
+				} else {
+					Log.d(TAG, "Speaker unplugged!");
+					Toast.makeText(context, "Speaker unplugged", Toast.LENGTH_SHORT).show();
+					if (mStreamAudioTask != null) {
+						mStreamAudioTask.cancel(true);
+					}
+					mToggleButton.setChecked(false);
+					mToggleButton.setEnabled(false);
+				}
+			}
+		};
 	}
 }
