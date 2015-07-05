@@ -20,10 +20,11 @@
 			android:layout_gravity="center|bottom"
 			android:layout_weight="0.60"
 			android:clickable="true"
-			android:background="@drawable/toggle_mic_button"
+			android:background="@drawable/toggle_mic_selector"
 			android:checked="false"
 			android:textSize="30sp"
-			android:textStyle="bold"/>
+			android:textStyle="bold"
+			android:textColor="@color/dark_grey"/>
 
 </LinearLayout>
 
